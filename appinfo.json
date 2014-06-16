@@ -1,0 +1,17 @@
+{
+  "uuid": "8697b07b-c24d-4a9c-ba60-0345dfef26af",
+  "shortName": "pebble-fuel",
+  "longName": "pebble-fuel",
+  "companyName": "MakeAwesomeHappen",
+  "versionCode": 1,
+  "versionLabel": "1.0.0",
+  "watchapp": {
+    "watchface": true
+  },
+  "appKeys": {
+    "dummy": 0
+  },
+  "resources": {
+    "media": []
+  }
+}
