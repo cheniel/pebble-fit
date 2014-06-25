@@ -14,7 +14,7 @@
 
 // ---------------- Constant definitions
 #define FUEL_COUNT_DEFAULT 0
-#define FUEL_COUNT_GOAL 500
+#define FUEL_COUNT_GOAL 50
 
 #define STREAK_DEFAULT 0
 
@@ -24,7 +24,7 @@
 #define FUEL_COUNT_KEY 1
 #define STREAK_KEY 2
 #define DATE_KEY 3
-
+#define GOAL_REACHED_KEY 4
 
 // ---------------- Macro definitions
 
@@ -38,6 +38,7 @@ static char *fuel_string;
 static char *date_string = "\0";
 static TextLayer *fuel_text;
 static TextLayer *date_text;
+static int goal_reached_today;
 
 // ---------------- Private prototypes
 static void tap_handler(AccelAxisType axis, int32_t direction);
@@ -68,8 +69,6 @@ static void window_load(Window *window) {
 	text_layer_set_text_color(fuel_text, GColorWhite);
 	text_layer_set_text_alignment(fuel_text, GTextAlignmentRight);
 
-	update_fuel_display();
-
 	layer_add_child(window_layer, text_layer_get_layer(fuel_text));
 
 	// create text layer
@@ -82,6 +81,7 @@ static void window_load(Window *window) {
 	text_layer_set_text(date_text, date_string);
 	layer_add_child(window_layer, text_layer_get_layer(date_text));
 
+	update_fuel_display();
 	accel_tap_service_subscribe(tap_handler);
 }
 
@@ -89,6 +89,18 @@ static void update_fuel_display() {
 	snprintf(fuel_string, MAX_FUEL_DIGITS, "%d", fuel_count);
 	text_layer_set_text(fuel_text, fuel_string);
 
+	if (fuel_count >= FUEL_COUNT_GOAL) {
+		date_string = "GOAL";
+		text_layer_set_text(date_text, date_string);
+
+		if ( !goal_reached_today ) {
+
+			// TODO create custom vibration
+			vibes_double_pulse();
+
+			goal_reached_today = 1;
+		}
+	}
 }
 
 static void window_unload(Window *window) {
@@ -96,6 +108,7 @@ static void window_unload(Window *window) {
 }
 
 static void refresh_day() {
+
 	// store date in date_string
 	time_t currentTime = time(NULL);
 	struct tm* tm = localtime(&currentTime);
@@ -104,6 +117,7 @@ static void refresh_day() {
 
 static void reset_day() {
 	fuel_count = 0;
+	goal_reached_today = 0;
 }
 
 static void init(void) {
@@ -118,7 +132,8 @@ static void init(void) {
 	// get persistent data
 	fuel_count = persist_exists(FUEL_COUNT_KEY) ? persist_read_int(FUEL_COUNT_KEY) : FUEL_COUNT_DEFAULT;
 	streak = persist_exists(STREAK_KEY) ? persist_read_int(STREAK_KEY) : STREAK_DEFAULT;
-	
+	goal_reached_today = persist_exists(GOAL_REACHED_KEY) ? persist_read_int(GOAL_REACHED_KEY) : 0;
+
 	date_string = calloc(MAX_DATE_CHAR, sizeof(char));
 	refresh_day();
 
@@ -150,6 +165,8 @@ static void deinit(void) {
 	// write persist variables
 	persist_write_int(FUEL_COUNT_KEY, fuel_count);
 	persist_write_int(STREAK_KEY, streak);
+	persist_write_int(GOAL_REACHED_KEY, goal_reached_today);
+
 	persist_write_string(DATE_KEY, date_string);
 
 	// destroy components
@@ -158,6 +175,7 @@ static void deinit(void) {
 	free(date_string);
 	text_layer_destroy(date_text);
 	text_layer_destroy(fuel_text);
+
 }
 
 int main(void) {
