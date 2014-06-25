@@ -47,6 +47,7 @@ static char *fuel_string;
 static TextLayer *fuel_text;
 static TextLayer *date_text;
 static TextLayer *status_bar;
+static TextLayer *status_helper_bar;
 static GRect bounds;
 
 // ---------------- Private prototypes
@@ -120,16 +121,19 @@ static void init(void) {
 	text_layer_set_text_color(date_text, GColorWhite);
 	text_layer_set_text_alignment(date_text, GTextAlignmentRight);
 
-	// initialize status bar
-	status_bar = text_layer_create((GRect) { .origin = { 0, 0 }, .size = { 20, 168 * fuel_count / FUEL_COUNT_GOAL } });
-	text_layer_set_background_color(status_bar, GColorWhite);
+	// initialize status helper bar (background)
+	status_helper_bar = text_layer_create((GRect) { .origin = { 0, 0 }, .size = { 20, WINDOW_HEIGHT} });
+	text_layer_set_background_color(status_helper_bar, GColorWhite);
 
-	fuel_count = 0;
+	// initialize status bar
+	status_bar = text_layer_create((GRect) { .origin = { 0, 0 }, .size = { 20, WINDOW_HEIGHT - (WINDOW_HEIGHT * fuel_count / FUEL_COUNT_GOAL) } });
+	text_layer_set_background_color(status_bar, GColorBlack);
 
 	// add layers to window layer
+	layer_add_child(window_layer, text_layer_get_layer(status_helper_bar));
+	layer_add_child(window_layer, text_layer_get_layer(status_bar));
 	layer_add_child(window_layer, text_layer_get_layer(fuel_text));
 	layer_add_child(window_layer, text_layer_get_layer(date_text));
-	layer_add_child(window_layer, text_layer_get_layer(status_bar));
 
 	window_stack_push(window, true);
 }
@@ -142,7 +146,7 @@ static void window_load(Window *window) {
 }
 
 static void tap_handler(AccelAxisType axis, int32_t direction) {
-	fuel_count++;
+	fuel_count+=10;
 	update_fuel_display();
 }
 
@@ -152,7 +156,7 @@ static void update_fuel_display() {
 	text_layer_set_text(fuel_text, fuel_string);
 
 	// used for bar
-	text_layer_set_size(status_bar, (GSize) { .w = 20, .h = 168 * fuel_count / FUEL_COUNT_GOAL });	
+	text_layer_set_size(status_bar, (GSize) { .w = 20, .h = WINDOW_HEIGHT - (WINDOW_HEIGHT * fuel_count / FUEL_COUNT_GOAL) });	
 
 	// check for goal condition
 	if (fuel_count >= FUEL_COUNT_GOAL) {
