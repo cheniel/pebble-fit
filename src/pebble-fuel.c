@@ -256,18 +256,14 @@ static void minute_tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
 	// remove preceding 0 if there is one
 	if ( !strncmp(time_string, "0", 1) ) {
-
-		// increment the pointer so the first char is skipped
+		// skip the first character and change the time
 		time_string++;
-		// push time string changes to display
 		text_layer_set_text(time_text, time_string);	
 		time_string--;	
 	} else {
-
+		// push time string changes to display
+		text_layer_set_text(time_text, time_string);	
 	}
-
-	// push time string changes to display
-	text_layer_set_text(time_text, time_string);	
 
 	refresh_day();
 }
