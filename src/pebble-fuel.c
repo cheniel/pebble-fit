@@ -31,10 +31,28 @@
 #define GOAL_REACHED_KEY 3
 #define DATE_KEY 4
 #define RECORD_KEY 5
+#define BEST_STREAK_KEY 6
+#define BEAT 200
 
 // ---------------- Macro definitions
 
 // ---------------- Structures/Types
+static const uint32_t const segments[] = { 
+	1 * BEAT, // vibe
+	2 * BEAT, // rest
+	2 * BEAT, // vibe
+	1 * BEAT, // rest
+	1 * BEAT, // vibe
+	2 * BEAT, // rest
+	1 * BEAT, // vibe
+	1 * BEAT, // rest
+	1 * BEAT  // vibe
+};
+
+VibePattern custom_vibration = {
+  .durations = segments,
+  .num_segments = ARRAY_LENGTH(segments),
+};
 
 // ---------------- Private variables
 static Window *window;
@@ -44,7 +62,8 @@ static int points_count;
 static int streak;
 static int goal_reached_today;
 static int record;
-static int goal = 100;
+static int goal = 400;
+static int best_streak;
 static char *date_string;
 
 /* used for graphics */
@@ -104,6 +123,8 @@ static void init(void) {
 		persist_read_int(GOAL_REACHED_KEY) : 0;
 	record = persist_exists(RECORD_KEY) ? 
 		persist_read_int(RECORD_KEY) : 0;
+	best_streak = persist_exists(BEST_STREAK_KEY) ? 
+		persist_read_int(BEST_STREAK_KEY) : streak;
 
 	// check for date change
 	refresh_day(); // get current date, store in date_string
@@ -124,7 +145,7 @@ static void init(void) {
 	text_layer_set_text_color(time_text, GColorWhite);
 	text_layer_set_text_alignment(time_text, GTextAlignmentCenter);
 
-	// create text layer
+	// create date layer
 	date_text = text_layer_create((GRect) { 
 		.origin = { STATUS_BAR_WIDTH, 0 }, 
 		.size = { bounds.size.w - STATUS_BAR_WIDTH - BUFFER, 40 } 
@@ -178,13 +199,15 @@ static void deinit(void) {
 	persist_write_int(GOAL_REACHED_KEY, goal_reached_today);
 	persist_write_string(DATE_KEY, date_string);
 	persist_write_int(RECORD_KEY, record);
+	persist_write_int(BEST_STREAK_KEY, best_streak);
 
-	// destroy components
-	window_destroy(window);
+	// free strings
 	free(info_string);
 	free(date_string);
 	free(time_string);
 
+	// destroy components
+	window_destroy(window);
 	text_layer_destroy(date_text);
 	text_layer_destroy(time_text);
 	text_layer_destroy(status_helper_bar);
@@ -225,8 +248,8 @@ static void update_points_display() {
 
 	// get info string to print
 	snprintf(info_string, MAX_INFO_LENGTH, 
-		"points: %d/%d\nstreak: %d\nrecord: %d\nbattery: %d", 
-		points_count, goal, streak, record, 
+		"points: %d/%d\nstreak: %d/%d\nrecord: %d\nbattery: %d", 
+		points_count, goal, streak, best_streak, record, 
 		battery_state_service_peek().charge_percent);
 
 	// push string to text layer
@@ -240,8 +263,14 @@ static void update_points_display() {
 
 	// check for goal condition
 	if (points_count >= goal && !goal_reached_today) {
-		vibes_double_pulse();
+ 		vibes_enqueue_custom_pattern(custom_vibration);	
 		goal_reached_today = 1;
+		streak++;
+
+		if ( streak > best_streak ) {
+			best_streak = streak;
+		}
+
 	}
 }
 
@@ -275,13 +304,6 @@ static void refresh_day() {
 	struct tm* tm = localtime(&currentTime);
 	strftime(date_string, MAX_DATE_CHAR, "%B %d, %Y\n%A", tm);
 
-	// streak tracking logic
-	if ( goal_reached_today ) {
-		streak++;
-	} else {
-		streak = 0;
-	}
-
 	// check for a change in the date
 	char *previous_date = calloc(MAX_DATE_CHAR, sizeof(char));
 	if (persist_exists(DATE_KEY)) { // if there exists previous data
@@ -302,6 +324,12 @@ static void refresh_day() {
 
 // called when there is a new day
 static void reset_day() {
+
+	// if the goal was not reached, reset the streak to 0
+	if ( !goal_reached_today ) {
+		streak = 0;
+	}
+
 	points_count = 0;
 	goal_reached_today = 0;
 }
