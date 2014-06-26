@@ -19,6 +19,7 @@
 #define WINDOW_WIDTH 144
 #define STATUS_BAR_WIDTH 5
 #define BUFFER 3
+#define ANIMATION_DURATION_MS 7000
 
 // Max definitions
 #define MAX_INFO_LENGTH 100
@@ -32,12 +33,15 @@
 #define DATE_KEY 4
 #define RECORD_KEY 5
 #define BEST_STREAK_KEY 6
-#define BEAT 200
+
+#define BEAT 200 // used for standard length of custom vibe
 
 // ---------------- Macro definitions
 
 // ---------------- Structures/Types
-static const uint32_t const segments[] = { 
+
+// used for custom vibe
+static const uint32_t const beat[] = { 
 	1 * BEAT, // vibe
 	2 * BEAT, // rest
 	2 * BEAT, // vibe
@@ -50,12 +54,11 @@ static const uint32_t const segments[] = {
 };
 
 VibePattern custom_vibration = {
-  .durations = segments,
-  .num_segments = ARRAY_LENGTH(segments),
+  .durations = beat,
+  .num_segments = ARRAY_LENGTH(beat),
 };
 
 // ---------------- Private variables
-static Window *window;
 
 /* persist variables */
 static int points_count;
@@ -67,6 +70,8 @@ static int best_streak;
 static char *date_string;
 
 /* used for graphics */
+static Window *window;
+static GRect bounds;
 static char *info_string;
 static char *time_string;
 static TextLayer *time_text;
@@ -74,7 +79,7 @@ static TextLayer *date_text;
 static TextLayer *points_text;
 static TextLayer *status_bar;
 static TextLayer *status_helper_bar;
-static GRect bounds;
+static int anim_step;
 
 // ---------------- Private prototypes
 static void tap_handler(AccelAxisType axis, int32_t direction);
@@ -86,7 +91,20 @@ static void deinit(void);
 static void reset_day();
 static void refresh_day();
 static void minute_tick_handler(struct tm *tick_time, TimeUnits units_changed);
+static void celebrate_goal();
+static void goal_anim_setup(struct Animation *animation);
+static void goal_anim_update(struct Animation *animation, 
+	const uint32_t time_normalized);
+static void goal_anim_teardown(struct Animation *animation);
+static void update_time();
 int main(void);
+
+// used for animation. needs prototype def
+static const AnimationImplementation goal_anim_impl = {
+	.setup = goal_anim_setup,
+	.update = goal_anim_update,
+	.teardown = goal_anim_teardown
+};
 
 /* ========================================================================== */
 
@@ -263,20 +281,61 @@ static void update_points_display() {
 
 	// check for goal condition
 	if (points_count >= goal && !goal_reached_today) {
- 		vibes_enqueue_custom_pattern(custom_vibration);	
+		celebrate_goal();
+
 		goal_reached_today = 1;
 		streak++;
 
 		if ( streak > best_streak ) {
 			best_streak = streak;
 		}
-
 	}
 }
 
-// called every minute
-static void minute_tick_handler(struct tm *tick_time, TimeUnits units_changed) {
+// goal animation and custom vibration
+static void celebrate_goal() {
+
+	anim_step = 0;
+
+	// goal animation
+	Animation *goal_anim = animation_create();
+	animation_set_duration(goal_anim, ANIMATION_DURATION_MS);
+
+	// set handler for update
+	animation_set_implementation(goal_anim, &goal_anim_impl);
 	
+	// start animation
+	animation_schedule(goal_anim);
+
+	// give custom vibration
+	vibes_enqueue_custom_pattern(custom_vibration);	
+}
+
+static void goal_anim_setup(struct Animation *animation) {
+	text_layer_set_font(time_text, 
+		fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
+}
+
+static void goal_anim_update(struct Animation *animation, const uint32_t time_normalized) {
+	if ( anim_step ) {
+		text_layer_set_text(time_text, "GOAL");		
+		anim_step = 0;
+	} else {
+		text_layer_set_text(time_text, "");	
+		anim_step = 1;
+	}
+
+	psleep(BEAT);
+}
+
+static void goal_anim_teardown(struct Animation *animation) {
+    animation_destroy(animation);
+    text_layer_set_font(time_text, 
+		fonts_get_system_font(FONT_KEY_BITHAM_42_MEDIUM_NUMBERS));
+    update_time();
+}
+
+static void update_time() {
 	// update the time string
 	time_t currentTime = time(NULL);
 	struct tm* tm = localtime(&currentTime);
@@ -292,7 +351,11 @@ static void minute_tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 		// push time string changes to display
 		text_layer_set_text(time_text, time_string);	
 	}
+}
 
+// called every minute
+static void minute_tick_handler(struct tm *tick_time, TimeUnits units_changed) {
+	update_time();
 	refresh_day();
 }
 
