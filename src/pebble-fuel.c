@@ -241,7 +241,6 @@ static void update_points_display() {
 	// check for goal condition
 	if (points_count >= goal && !goal_reached_today) {
 		vibes_double_pulse();
-		streak++;
 		goal_reached_today = 1;
 	}
 }
@@ -275,6 +274,13 @@ static void refresh_day() {
 	time_t currentTime = time(NULL);
 	struct tm* tm = localtime(&currentTime);
 	strftime(date_string, MAX_DATE_CHAR, "%B %d, %Y\n%A", tm);
+
+	// streak tracking logic
+	if ( goal_reached_today ) {
+		streak++;
+	} else {
+		streak = 0;
+	}
 
 	// check for a change in the date
 	char *previous_date = calloc(MAX_DATE_CHAR, sizeof(char));
