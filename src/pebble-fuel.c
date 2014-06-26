@@ -13,21 +13,19 @@
 // ---------------- Local includes	e.g., "file.h"
 
 // ---------------- Constant definitions
+
+// graphics definitions
 #define WINDOW_HEIGHT 168
 #define WINDOW_WIDTH 144
-
 #define STATUS_BAR_WIDTH 5
 #define BUFFER 3
 
-#define POINTS_COUNT_DEFAULT 0
-#define POINTS_COUNT_GOAL 100
-
-#define STREAK_DEFAULT 0
-
+// Max definitions
 #define MAX_INFO_LENGTH 100
 #define MAX_DATE_CHAR 30
 #define MAX_TIME_CHAR 10
 
+// keys for persistant storage
 #define POINTS_COUNT_KEY 1
 #define STREAK_KEY 2
 #define GOAL_REACHED_KEY 3
@@ -46,6 +44,7 @@ static int points_count;
 static int streak;
 static int goal_reached_today;
 static int record;
+static int goal = 100;
 static char *date_string;
 
 /* used for graphics */
@@ -98,9 +97,9 @@ static void init(void) {
 
 	// get persistent data
 	points_count = persist_exists(POINTS_COUNT_KEY) ? 
-		persist_read_int(POINTS_COUNT_KEY) : POINTS_COUNT_DEFAULT;
+		persist_read_int(POINTS_COUNT_KEY) : 0;
 	streak = persist_exists(STREAK_KEY) ? 
-		persist_read_int(STREAK_KEY) : STREAK_DEFAULT;
+		persist_read_int(STREAK_KEY) : 0;
 	goal_reached_today = persist_exists(GOAL_REACHED_KEY) ? 
 		persist_read_int(GOAL_REACHED_KEY) : 0;
 	record = persist_exists(RECORD_KEY) ? 
@@ -147,7 +146,7 @@ static void init(void) {
 	status_bar = text_layer_create((GRect) { 
 		.origin = { 0, 0 }, 
 		.size = { STATUS_BAR_WIDTH, WINDOW_HEIGHT - (WINDOW_HEIGHT 
-			* points_count / POINTS_COUNT_GOAL) } 
+			* points_count / goal) } 
 	});
 	text_layer_set_background_color(status_bar, GColorBlack);
 
@@ -227,7 +226,7 @@ static void update_points_display() {
 	// get info string to print
 	snprintf(info_string, MAX_INFO_LENGTH, 
 		"points: %d/%d\nstreak: %d\nrecord: %d\nbattery: %d", 
-		points_count, POINTS_COUNT_GOAL, streak, record, 
+		points_count, goal, streak, record, 
 		battery_state_service_peek().charge_percent);
 
 	// push string to text layer
@@ -236,11 +235,11 @@ static void update_points_display() {
 	// adjust size of status bar based on new points
 	text_layer_set_size(status_bar, (GSize) { 
 		.w = STATUS_BAR_WIDTH, 
-		.h = WINDOW_HEIGHT - (WINDOW_HEIGHT * points_count / POINTS_COUNT_GOAL) 
+		.h = WINDOW_HEIGHT - (WINDOW_HEIGHT * points_count / goal) 
 	});	
 
 	// check for goal condition
-	if (points_count >= POINTS_COUNT_GOAL && !goal_reached_today) {
+	if (points_count >= goal && !goal_reached_today) {
 		vibes_double_pulse();
 		streak++;
 		goal_reached_today = 1;
@@ -260,6 +259,11 @@ static void minute_tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
 		// increment the pointer so the first char is skipped
 		time_string++;
+		// push time string changes to display
+		text_layer_set_text(time_text, time_string);	
+		time_string--;	
+	} else {
+
 	}
 
 	// push time string changes to display
