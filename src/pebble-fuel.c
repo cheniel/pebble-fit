@@ -17,14 +17,15 @@
 #define WINDOW_WIDTH 144
 
 #define STATUS_BAR_WIDTH 5
+#define BUFFER 3
 
 #define POINTS_COUNT_DEFAULT 0
 #define POINTS_COUNT_GOAL 100
 
 #define STREAK_DEFAULT 0
 
-#define MAX_POINTS_DIGITS 4
-#define MAX_DATE_CHAR 20
+#define MAX_INFO_LENGTH 100
+#define MAX_DATE_CHAR 30
 #define MAX_TIME_CHAR 10
 
 #define POINTS_COUNT_KEY 1
@@ -87,7 +88,7 @@ static void init(void) {
 	// initialize strings
 	date_string = calloc(MAX_DATE_CHAR, sizeof(char));
 	char *previous_date = calloc(MAX_DATE_CHAR, sizeof(char));
-	points_string = malloc(sizeof(char) * MAX_POINTS_DIGITS);
+	points_string = malloc(sizeof(char) * MAX_INFO_LENGTH);
 	time_string = calloc(MAX_TIME_CHAR, sizeof(char));
 
 	// get persistent data
@@ -120,13 +121,14 @@ static void init(void) {
 	text_layer_set_font(time_text, fonts_get_system_font(FONT_KEY_ROBOTO_BOLD_SUBSET_49));
 	text_layer_set_background_color(time_text, GColorBlack);
 	text_layer_set_text_color(time_text, GColorWhite);
-	text_layer_set_text_alignment(time_text, GTextAlignmentRight);
+	text_layer_set_text_alignment(time_text, GTextAlignmentCenter);
 
 	// create text layer
-	date_text = text_layer_create((GRect) { .origin = { STATUS_BAR_WIDTH, 50 }, .size = { bounds.size.w - STATUS_BAR_WIDTH, 50 } });
+	date_text = text_layer_create((GRect) { .origin = { STATUS_BAR_WIDTH, 50 }, .size = { bounds.size.w - STATUS_BAR_WIDTH - BUFFER, 40 } });
 	text_layer_set_background_color(date_text, GColorBlack);
 	text_layer_set_text_color(date_text, GColorWhite);
-	text_layer_set_text_alignment(date_text, GTextAlignmentRight);
+	text_layer_set_text_alignment(date_text, GTextAlignmentCenter);
+	text_layer_set_font(date_text, fonts_get_system_font(FONT_KEY_GOTHIC_18));
 
 	// initialize status helper bar (background)
 	status_helper_bar = text_layer_create((GRect) { .origin = { 0, 0 }, .size = { STATUS_BAR_WIDTH, WINDOW_HEIGHT} });
@@ -137,9 +139,12 @@ static void init(void) {
 	text_layer_set_background_color(status_bar, GColorBlack);
 
 	// initialize points 
-	points_text = text_layer_create((GRect) { .origin = { STATUS_BAR_WIDTH, WINDOW_HEIGHT - 20 }, .size = { bounds.size.w - STATUS_BAR_WIDTH, 50 } });
+	points_text = text_layer_create((GRect) { .origin = { STATUS_BAR_WIDTH + BUFFER, WINDOW_HEIGHT - 60 }, .size = { bounds.size.w - STATUS_BAR_WIDTH - BUFFER, 60 } });
 	text_layer_set_text_color(points_text, GColorWhite);
 	text_layer_set_background_color(points_text, GColorBlack);
+	text_layer_set_font(points_text, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+	text_layer_set_text_alignment(points_text, GTextAlignmentCenter);
+
 
 	// add layers to window layer
 	layer_add_child(window_layer, text_layer_get_layer(status_helper_bar));
@@ -166,7 +171,7 @@ static void tap_handler(AccelAxisType axis, int32_t direction) {
 
 // called when the user shakes his/her pebble
 static void update_points_display() {
-	snprintf(points_string, MAX_POINTS_DIGITS, "%d", points_count);
+	snprintf(points_string, MAX_INFO_LENGTH, "points: %d/%d\nstreak: %d\nrecord: %d\nbattery: %d", points_count, POINTS_COUNT_GOAL, streak, 3, battery_state_service_peek().charge_percent);
 	text_layer_set_text(points_text, points_string);
 
 	// used for bar
@@ -194,6 +199,13 @@ static void minute_tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 	struct tm* tm = localtime(&currentTime);
 	strftime(time_string, MAX_DATE_CHAR, "%I:%M", tm);
 
+	// removed preceding 0
+	if ( !strncmp(time_string, "0", 1) ) {
+
+		// increment the pointer so the first char is skipped
+		time_string++;
+	}
+
 	text_layer_set_text(time_text, time_string);	
 }
 
@@ -203,7 +215,7 @@ static void refresh_day() {
 	// store date in date_string
 	time_t currentTime = time(NULL);
 	struct tm* tm = localtime(&currentTime);
-	strftime(date_string, MAX_DATE_CHAR, "%b %d, %Y", tm);
+	strftime(date_string, MAX_DATE_CHAR, "%B %d, %Y\n%A", tm);
 
 }
 
