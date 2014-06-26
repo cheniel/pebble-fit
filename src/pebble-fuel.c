@@ -32,6 +32,7 @@
 #define STREAK_KEY 2
 #define GOAL_REACHED_KEY 3
 #define DATE_KEY 4
+#define RECORD_KEY 5
 
 // ---------------- Macro definitions
 
@@ -44,6 +45,7 @@ static Window *window;
 static int points_count;
 static int streak;
 static int goal_reached_today;
+static int record;
 static char *date_string;
 
 /* used for graphics */
@@ -95,6 +97,7 @@ static void init(void) {
 	points_count = persist_exists(POINTS_COUNT_KEY) ? persist_read_int(POINTS_COUNT_KEY) : POINTS_COUNT_DEFAULT;
 	streak = persist_exists(STREAK_KEY) ? persist_read_int(STREAK_KEY) : STREAK_DEFAULT;
 	goal_reached_today = persist_exists(GOAL_REACHED_KEY) ? persist_read_int(GOAL_REACHED_KEY) : 0;
+	record = persist_exists(RECORD_KEY) ? persist_read_int(RECORD_KEY) : 0;
 
 	// check for date change
 	refresh_day(); // get current date, store in date_string
@@ -160,7 +163,7 @@ static void window_load(Window *window) {
 	update_points_display();
 	text_layer_set_text(date_text, date_string);
 
-	tick_timer_service_subscribe(SECOND_UNIT, minute_tick_handler);	
+	tick_timer_service_subscribe(MINUTE_UNIT, minute_tick_handler);	
 	accel_tap_service_subscribe(tap_handler);
 }
 
@@ -171,7 +174,11 @@ static void tap_handler(AccelAxisType axis, int32_t direction) {
 
 // called when the user shakes his/her pebble
 static void update_points_display() {
-	snprintf(points_string, MAX_INFO_LENGTH, "points: %d/%d\nstreak: %d\nrecord: %d\nbattery: %d", points_count, POINTS_COUNT_GOAL, streak, 3, battery_state_service_peek().charge_percent);
+	if (points_count >= record ) {
+		record = points_count;
+	}
+
+	snprintf(points_string, MAX_INFO_LENGTH, "points: %d/%d\nstreak: %d\nrecord: %d\nbattery: %d", points_count, POINTS_COUNT_GOAL, streak, record, battery_state_service_peek().charge_percent);
 	text_layer_set_text(points_text, points_string);
 
 	// used for bar
@@ -231,7 +238,7 @@ static void deinit(void) {
 	persist_write_int(STREAK_KEY, streak);
 	persist_write_int(GOAL_REACHED_KEY, goal_reached_today);
 	persist_write_string(DATE_KEY, date_string);
-
+	persist_write_int(RECORD_KEY, record);
 
 	// destroy components
 	window_destroy(window);
