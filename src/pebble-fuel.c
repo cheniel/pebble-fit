@@ -36,6 +36,8 @@
 
 #define BEAT 200 // used for standard length of custom vibe
 
+// fonts
+
 // ---------------- Macro definitions
 
 // ---------------- Structures/Types
@@ -266,7 +268,7 @@ static void update_points_display() {
 
 	// get info string to print
 	snprintf(info_string, MAX_INFO_LENGTH, 
-		"points: %d/%d\nstreak: %d/%d\nrecord: %d\nbattery: %d", 
+		"points: %d/%d\n-\nstreak: %d/%d\nrecord: %d\nbattery: %d%%", 
 		points_count, goal, streak, best_streak, record, 
 		battery_state_service_peek().charge_percent);
 
@@ -346,7 +348,7 @@ static void update_time() {
 		// skip the first character and change the time
 		time_string++;
 		text_layer_set_text(time_text, time_string);	
-		time_string--;	
+		time_string--; // needed to prevent free error
 	} else {
 		// push time string changes to display
 		text_layer_set_text(time_text, time_string);	
