@@ -146,9 +146,6 @@ static void init(void) {
 	best_streak = persist_exists(BEST_STREAK_KEY) ? 
 		persist_read_int(BEST_STREAK_KEY) : streak;
 
-	// check for date change
-	refresh_day(); // get current date, store in date_string
-
 	// begin creating layers
 	// get bounds for use in creating layers
 	Layer *window_layer = window_get_root_layer(window);
@@ -268,7 +265,7 @@ static void update_points_display() {
 
 	// get info string to print
 	snprintf(info_string, MAX_INFO_LENGTH, 
-		"points: %d/%d\n-\nstreak: %d/%d\nrecord: %d\nbattery: %d%%", 
+		"points: %d/%d\nstreak: %d/%d\nrecord: %d\nbattery: %d%%", 
 		points_count, goal, streak, best_streak, record, 
 		battery_state_service_peek().charge_percent);
 
@@ -381,6 +378,9 @@ static void refresh_day() {
 		// reset counters
 		if ( strncmp(previous_date, date_string, strlen(previous_date)) ) {
 			reset_day();
+
+			// update current date
+			persist_write_string(DATE_KEY, date_string);
 		} 
 	} 
 	free(previous_date);
