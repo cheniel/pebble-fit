@@ -188,7 +188,7 @@ static void init(void) {
 	});
 	text_layer_set_background_color(status_bar, GColorBlack);
 
-	// initialize points 
+	// initialize points layer
 	points_text = text_layer_create((GRect) { 
 		.origin = { STATUS_BAR_WIDTH + BUFFER, WINDOW_HEIGHT - 60 }, 
 		.size = { bounds.size.w - STATUS_BAR_WIDTH - BUFFER, 60 } 
