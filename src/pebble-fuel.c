@@ -261,6 +261,7 @@ static void update_points_display() {
 	// check if current point count is a record
 	if (points_count >= record ) {
 		record = points_count;
+		persist_write_int(RECORD_KEY, record);	
 	}
 
 	// get info string to print
