@@ -287,6 +287,7 @@ static void update_points_display() {
 
 		if ( streak > best_streak ) {
 			best_streak = streak;
+			persist_write_int(BEST_STREAK_KEY, best_streak);
 		}
 	}
 }
