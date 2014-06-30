@@ -67,7 +67,7 @@ static int points_count;
 static int streak;
 static int goal_reached_today;
 static int record;
-static int goal = 400;
+static int goal = 1000;
 static int best_streak;
 static char *date_string;
 
