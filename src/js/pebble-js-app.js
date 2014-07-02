@@ -6,6 +6,16 @@ Pebble.addEventListener("ready",
 
 Pebble.addEventListener("showConfiguration",
   function(e) {
-  	Pebble.openURL("http://www.google.com");
+  	Pebble.openURL("http://danieljchen.com/pebble/fit/");
+  }
+);
+
+Pebble.addEventListener("webviewclosed",
+  function(e) {
+    var configuration = JSON.parse(decodeURIComponent(e.response));
+    console.log("Configuration window returned: ", JSON.stringify(configuration));
+
+    
+
   }
 );
