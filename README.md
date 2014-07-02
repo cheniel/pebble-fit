@@ -2,7 +2,7 @@ pebble-fit
 ==========
 <img src="https://github.com/cheniel/pebble-fit/raw/master/samples/marketingheader.png">
 
-Currently testing, to be launched in Pebble app store soon. Need to add config for goal setting.
+Currently testing, to be launched in Pebble app store soon. <a href="https://github.com/cheniel/pebble-fit-config">Configuration page repo.</a>
 
 ### Installation
 1. Download Pebble SDK
