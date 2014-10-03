@@ -11,6 +11,7 @@
 #include <pebble.h>
 
 // ---------------- Local includes	e.g., "file.h"
+#include "strap/strap.h"
 
 // ---------------- Constant definitions
 
@@ -206,10 +207,21 @@ static void init(void) {
 	layer_add_child(window_layer, text_layer_get_layer(points_text));
 
 	window_stack_push(window, true);
+
+	int in_size = app_message_inbox_size_maximum();
+	int out_size = app_message_outbox_size_maximum();
+	app_message_open(in_size, out_size);
+
+	// initialize strap
+	strap_init();
+	strap_log_event("/open");
+
 }
 
 static void deinit(void) {
 	
+	strap_deinit();
+
 	// write persist variables
 	persist_write_int(POINTS_COUNT_KEY, points_count);
 	persist_write_int(STREAK_KEY, streak);
@@ -253,6 +265,7 @@ static void window_unload(Window *window) {
 static void tap_handler(AccelAxisType axis, int32_t direction) {
 	points_count++;
 	update_points_display();
+	strap_log_event("/points-achieved");
 }
 
 // called when the user shakes his/her pebble
@@ -310,6 +323,7 @@ static void celebrate_goal() {
 
 	// give custom vibration
 	vibes_enqueue_custom_pattern(custom_vibration);	
+	strap_log_event("/goals-reached");
 }
 
 static void goal_anim_setup(struct Animation *animation) {
@@ -358,6 +372,7 @@ static void update_time() {
 static void minute_tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 	update_time();
 	refresh_day();
+	strap_log_event("/minutes-worn");
 }
 
 // refreshes the day string
@@ -370,7 +385,7 @@ static void refresh_day() {
 
 	// check for a change in the date
 	char *previous_date = calloc(MAX_DATE_CHAR, sizeof(char));
-	if (persist_exists(DATE_KEY)) { // if there exists previous data
+	if (persist_exists(DATE_KEY)) { // if there exists previous date
 
 		// get the date that existed last time this app was open, 
 		// store in previous_date
